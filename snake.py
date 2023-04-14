@@ -12,11 +12,15 @@ class Snake:
 
     SIZE = 10
 
-    def __init__(self, pos):
+    def __init__(self, pos, surface, width, height):
         """Initialize the snake."""
         self.pos = pos
         self.vel = (0, -self.SIZE)
-        self.body = [self.pos, (self.pos[0], self.pos[1] + self.SIZE)]
+        self.body = [self.pos]
+        self.grow = False
+        self.surface = surface
+        self.width = width
+        self.height = height
 
     def handle_keys(self):
         """Handle keyboard input."""
@@ -35,19 +39,29 @@ class Snake:
         """Update the snake's position."""
         head = (self.body[0][0] + self.vel[0], self.body[0][1] + self.vel[1])
         self.body.insert(0, head)
-        self.body.pop()
+        if not self.grow:
+            self.body.pop()
+        else:
+            self.grow = False
 
     def eat(self, apple):
         """Grow the snake when it eats an apple."""
-        self.body.append(self.body[-1])
+        if self.body[0] == apple.pos:
+            self.grow = True
+            apple.reposition(self)
+            self.draw()
 
-    def collides_with(self, other):
-        """Check if the snake collides with another object."""
-        return pygame.Rect(self.pos, (self.SIZE, self.SIZE)).colliderect(
-            pygame.Rect(other.pos, (other.SIZE, other.SIZE))
-        )
+    def collides_with_wall(self):
+        """Check if the snake collides with a wall."""
+        x, y = self.body[0]
+        return x < 0 or x >= self.width or y < 0 or y >= self.height
 
-    def draw(self, surface):
+    def collides_with_self(self):
+        """Check if the snake collides with itself."""
+        return self.body[0] in self.body[1:]
+
+    def draw(self):
         """Draw the snake on the surface."""
         for pos in self.body:
-            pygame.draw.rect(surface, (0, 255, 0), (pos, (self.SIZE, self.SIZE)))
+            pygame.draw.rect(self.surface, (0, 255, 0), (pos, (self.SIZE, self.SIZE)))
+        pygame.display.flip()

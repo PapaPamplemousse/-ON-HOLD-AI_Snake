@@ -1,50 +1,67 @@
 """
 Game module for the Snake game.
 
-This module contains the Game class that manages the game logic.
+This module contains the Game class that represents the game.
 """
 
-import random
 import pygame
 from snake import Snake
 from apple import Apple
 
 
 class Game:
-    """Class that manages the game logic."""
+    """Class that represents the game."""
+
+    WIDTH = 640
+    HEIGHT = 480
+    FPS = 10
 
     def __init__(self):
         """Initialize the game."""
-        self.width = 640
-        self.height = 480
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        pygame.init()
+        pygame.display.set_caption("Snake Game")
         self.clock = pygame.time.Clock()
-        self.snake = Snake((self.width // 2, self.height // 2))
-        self.apple = Apple(self.get_random_pos())
+        self.surface = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        self.snake = Snake((self.WIDTH // 2, self.HEIGHT // 2), self.surface, self.WIDTH, self.HEIGHT)
+        self.apple = Apple((self.WIDTH // 2, self.HEIGHT // 2))
+        self.font = pygame.font.SysFont(None, 50)
+
+    def handle_events(self):
+        """Handle events."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
+    def check_collision(self):
+        """Check if the snake has collided with a wall or itself."""
+        if self.snake.collides_with_wall() or self.snake.collides_with_self():
+            self.game_over = True
 
     def run(self):
-        """Main game loop."""
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    return
+        """Run the game."""
+        self.running = True
+        self.game_over = False
+        while self.running:
+            self.handle_events()
 
+            if self.game_over:
+                game_over_text = self.font.render("Game Over", True, (255, 255, 255))
+                self.surface.blit(game_over_text, (self.WIDTH // 2 - game_over_text.get_width() // 2,
+                                                   self.HEIGHT // 2 - game_over_text.get_height() // 2))
+                pygame.display.flip()
+                pygame.time.wait(1000)
+                self.__init__()
+                self.run()
+                continue
+
+            self.surface.fill((0, 0, 0))
             self.snake.handle_keys()
             self.snake.update()
-
-            if self.snake.collides_with(self.apple):
-                self.snake.eat(self.apple)
-                self.apple = Apple(self.get_random_pos())
-
-            self.screen.fill((0, 0, 0))
-            self.snake.draw(self.screen)
-            self.apple.draw(self.screen)
+            self.snake.draw()
+            self.apple.draw(self.surface)
+            self.check_collision()
+            self.snake.eat(self.apple)
             pygame.display.flip()
+            self.clock.tick(self.FPS)
 
-            self.clock.tick(10)
-
-    def get_random_pos(self):
-        """Return a random position on the screen."""
-        x = random.randint(0, self.width - Apple.SIZE)
-        y = random.randint(0, self.height - Apple.SIZE)
-        return x, y
+        pygame.quit()
